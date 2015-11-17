@@ -42,16 +42,19 @@ class Document:
 		self.getLoc()
 		
 
+		
+		#if not self.inWindow() and not init:
+			#if self.hidden:
+			#	return
+			#else:
+			#	self.hidden = True
+			#	self.loc = (-100, -100)
 
-		if not self.inWindow() and not init:
-			if self.hidden:
-				return
-			else:
-				self.hidden = True
-				self.loc = (-100, -100)
 
 		if self.inWindow() and self.hidden:
 			self.hidden = False
+		elif not self.inWindow() and not self.hidden:
+			self.hidden = True
 
 
 		self.getRadius()
@@ -141,6 +144,7 @@ class Document:
 
 		return
 
+
 	def setBinds(self):
 		#self.canvas.tag_bind(self.circle1Index, '<Button-1>',
 		#		(lambda event: self.printData()))
@@ -156,12 +160,133 @@ class Document:
 				(lambda event, widget="circle2": self.widgetEnter(event, widget)))
 		self.canvas.tag_bind(self.circle1Index, '<Enter>',
 				(lambda event, widget="circle1": self.widgetEnter(event, widget)))
+
+		self.canvas.tag_bind(self.circle3Index, '<Leave>',
+				(lambda event, widget="circle3": self.widgetLeave(event, widget)))
+		self.canvas.tag_bind(self.circle3FracIndex, '<Leave>',
+				(lambda event, widget="circle3": self.widgetLeave(event, widget)))
+		self.canvas.tag_bind(self.circle2Index, '<Leave>',
+				(lambda event, widget="circle2": self.widgetLeave(event, widget)))
+		self.canvas.tag_bind(self.circle2FracIndex, '<Leave>',
+				(lambda event, widget="circle2": self.widgetLeave(event, widget)))
+		self.canvas.tag_bind(self.circle1Index, '<Leave>',
+				(lambda event, widget="circle1": self.widgetLeave(event, widget)))
 	
 
 	def widgetEnter(self, event, name):
 
 		if name in ["circle3", "circle2", "circle1"]:
 			self.parent.parent.resultList.setText(self.dataStr())
+
+	def widgetLeave(self, event, name):
+
+		if name in ["circle3", "circle2", "circle1"]:
+			self.parent.parent.resultList.setText("")
+
+	def dataStr(self):
+		data=[]
+
+		data.append("Title: %s"%self.title)
+		data.append("Author: %s"%self.author)
+		data.append("Author h-index: %s"%self.author_h_index)
+		data.append("Year: %s"%self.year)
+		data.append("Publisher: %s"%self.publisher)
+		data.append("Citations: %s"%self.citations)
+		data.append("WOS: %s"%self.WOS)
+		data.append("Rank: %s"%self.rank)
+
+		
+
+		return '\n'.join(data)
+
+	def getRadius(self):
+		rank = self.rank
+
+		minRank, maxRank = self.parent.getRankRange(ignoreWindow=False)
+	
+		if maxRank == minRank:
+			self.radius = self.dd.maxGlyphR
+			return
+
+
+		rank_p = 1.0 - 1.0*(rank - minRank)/(maxRank - minRank)
+		#print rank_p*rank_p
+	
+
+		self.radius = max(self.dd.maxGlyphR * rank_p*rank_p, self.dd.minGlyphR)
+
+	def getLoc(self):
+
+		# location depends on current histogram windows
+		# if a doc is not in the window, it should be outside of the visible area
+		#(yMin,yMax),(xMin,xMax) = self.parent.getCitationRange(ignoreWindow=False), self.parent.getYearRange(ignoreWindow=False)
+
+		(yMin,yMax) = self.parent.parent.yHist.windowMin, self.parent.parent.yHist.windowMax
+		(xMin,xMax) = self.parent.parent.xHist.windowMin, self.parent.parent.xHist.windowMax
+
+		xLoc = 0
+		yLoc = 0
+
+
+		#self.loc=(random.random(), random.random())#(0.0,0.0)
+
+		#print yMin, yMax, xMin, xMax
+
+		#print "xMax, xMin = ", xMax, xMin
+		if xMax != xMin:
+			xLoc = 1.0 * (self.year - xMin)/(xMax-xMin)
+		else:
+			xLoc = 0.5
+
+		if yMax != yMin:
+			yLoc = 1.0 - 1.0 * (self.citations - yMin)/(yMax-yMin)
+		else:
+			yLoc = 0.5
+
+		#print xLoc, yLoc
+
+		self.loc=(xLoc, yLoc)
+
+	def getAngle2(self):
+		# measures h-index of author 
+
+		(minHI, maxHI) = self.parent.getHIndexRange(ignoreWindow=False)
+
+		if maxHI != 0.0:
+			self.angle2 = 359.9 * (1.0 * self.author_h_index / maxHI)
+		else:
+			self.angle2 = 359.9
+
+	def getAngle3(self):
+		# measures WOS score
+
+		(minWOS, maxWOS) = self.parent.getWOSRange(ignoreWindow=False)
+
+		if maxWOS != 0.0:
+			self.angle3 = 359.9 * (1.0 * self.WOS / maxWOS)
+		else:
+			self.angle3 = 359.9
+
+		#if self.angle3 > 360.0:
+		#	print self.angle3, self.hidden
+
+	def inWindow(self):
+
+		yMin = self.parent.parent.yHist.windowMin#totalMin#
+		yMax = self.parent.parent.yHist.windowMax#totalMax#
+
+		xMin = self.parent.parent.xHist.windowMin#totalMin #
+		xMax = self.parent.parent.xHist.windowMax#totalMax #
+
+		inYear = self.year >= xMin and self.year <= xMax
+		inCite = self.citations >= yMin and self.citations <= yMax
+
+		inBounds = inYear and inCite
+
+		return inBounds
+
+
+	''' DOCUMENT DATA INITIALIZATION FUNCTIONS '''
 
 	def randomName(self):
 		constonants = 'bcdfghjklmnprstvwxz'
@@ -218,102 +343,12 @@ class Document:
 
 		return v+' '+a+' '+s
 
-	def dataStr(self):
-		data=[]
+	def hasCiteLink(self, doc):
+		# lets pretend two docs share a cite link if they share a common title word
+		# will need to update this if we use titles with stopwords
 
-		data.append("Title: %s"%self.title)
-		data.append("Author: %s"%self.author)
-		data.append("Author h-index: %s"%self.author_h_index)
-		data.append("Year: %s"%self.year)
-		data.append("Publisher: %s"%self.publisher)
-		data.append("Citations: %s"%self.citations)
-		data.append("WOS: %s"%self.WOS)
-		data.append("Rank: %s"%self.rank)
-
-		
-
-		return '\n'.join(data)
-
-	def getRadius(self):
-		rank = self.rank
-
-		minRank, maxRank = self.parent.getRankRange(ignoreWindow=False)
-	
-		if maxRank == minRank:
-			self.radius = self.dd.maxGlyphR
-			return
-
-
-		rank_p = 1.0 - 1.0*(rank - minRank)/(maxRank - minRank)
-		#print rank_p*rank_p
-	
-
-		self.radius = max(self.dd.maxGlyphR * rank_p*rank_p, self.dd.minGlyphR)
-
-	def getLoc(self):
-
-		# location depends on current histogram windows
-		# if a doc is not in the window, it should be outside of the visible area
-		(yMin,yMax),(xMin,xMax) = self.parent.getCitationRange(ignoreWindow=False), self.parent.getYearRange(ignoreWindow=False)
-
-		xLoc = 0
-		yLoc = 0
-
-
-		#self.loc=(random.random(), random.random())#(0.0,0.0)
-
-		#print yMin, yMax, xMin, xMax
-
-		#print "xMax, xMin = ", xMax, xMin
-		if xMax != xMin:
-			xLoc = 1.0 * (self.year - xMin)/(xMax-xMin)
-		else:
-			xLoc = 0.5
-
-		if yMax != yMin:
-			yLoc = 1.0 - 1.0 * (self.citations - yMin)/(yMax-yMin)
-		else:
-			yLoc = 0.5
-
-		#print xLoc, yLoc
-
-		self.loc=(xLoc, yLoc)
-
-	def getAngle2(self):
-		# measures h-index of author 
-
-		(minHI, maxHI) = self.parent.getHIndexRange(ignoreWindow=False)
-
-		if maxHI != 0.0:
-			self.angle2 = 359.9 * (1.0 * self.author_h_index / maxHI)
-		else:
-			self.angle2 = 359.9
-
-	def getAngle3(self):
-		# measures WOS score
-
-		(minWOS, maxWOS) = self.parent.getWOSRange(ignoreWindow=False)
-
-		if maxWOS != 0.0:
-			self.angle3 = 359.9 * (1.0 * self.WOS / maxWOS)
-		else:
-			self.angle3 = 359.9
-
-		#if self.angle3 > 360.0:
-		#	print self.angle3, self.hidden
-
-
-	def inWindow(self):
-
-		yMin = self.parent.parent.yHist.windowMin#totalMin#
-		yMax = self.parent.parent.yHist.windowMax#totalMax#
-
-		xMin = self.parent.parent.xHist.windowMin#totalMin #
-		xMax = self.parent.parent.xHist.windowMax#totalMax #
-
-		inYear = self.year >= xMin and self.year <= xMax
-		inCite = self.citations >= yMin and self.citations <= yMax
-
-		inBounds = inYear and inCite
-
-		return inBounds
+		influence = 1./ min(self.rank, doc.rank)
+		minRank = min(self.rank, doc.rank)
+		#influence = 1. - 1./(0.02 * math.sqrt(self.citations) + 1)
+		if len(set(self.title.split()) & set(doc.title.split())) >= 1 and influence >= random.random():
+			return True

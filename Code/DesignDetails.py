@@ -37,6 +37,8 @@ class DesignDetails:
 		self.grey3 = g.toFloatfHex('#303030')
 		self.grey4 = g.toFloatfHex('#424242')
 
+		self.very_light_grey = g.toFloatfHex('#e6e6e6')
+
 		
 		# www.google.com/design/spec/style/color.html#
 
@@ -53,6 +55,7 @@ class DesignDetails:
 
 		''' ##################### '''
 
+		
 		# dark grey
 		self.background = self.grey2
 
@@ -64,6 +67,7 @@ class DesignDetails:
 
 		self.glyphR3Colour = self.red
 
+		self.citeLinkColour = g.shadeN([self.background, self.white], [0,1], 0.5)
 
 		# dark grey
 		self.histBkg = self.grey4
@@ -71,3 +75,24 @@ class DesignDetails:
 		self.histFgd = self.blue
 
 		self.labelColour = (1,1,1)
+		'''
+		self.background = self.very_light_grey
+
+		self.glyphOpacity = 0.1
+
+		self.glyphR1Colour = self.green
+
+		self.glyphR2Colour = self.red
+
+		self.glyphR3Colour = self.blue
+
+		self.citeLinkColour = self.black
+
+
+		# dark grey
+		self.histBkg = self.grey4
+		# light blue
+		self.histFgd = self.blue
+
+		self.labelColour = (1,1,1)
+		'''

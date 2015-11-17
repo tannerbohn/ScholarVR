@@ -166,8 +166,18 @@ class Histogram:
 	def updateTotalRange(self):
 		if self.orientation == 'y':
 			self.totalMin, self.totalMax = self.parent.glyphArea.getCitationRange(ignoreWindow=True)
+			dist = self.totalMax - self.totalMin
+			#self.totalMin = int(self.totalMin - dist*0.1)
+			self.totalMax = int(self.totalMax + dist*0.1)
 		else: #'x'
 			self.totalMin, self.totalMax = self.parent.glyphArea.getYearRange(ignoreWindow=True)
+			dist = self.totalMax - self.totalMin
+			self.totalMin = int(self.totalMin - dist*0.1)
+			self.totalMax = int(self.totalMax + dist*0.1)
+
+		#dist = self.totalMax - self.totalMin
+		#self.totalMin = int(self.totalMin - dist*0.1)
+		#self.totalMax = int(self.totalMax + dist*0.1)
 
 	def getWindowRange(self, init=False):
 		if init:
@@ -179,7 +189,8 @@ class Histogram:
 	def getBins(self):
 		# calculate the actual bin values for the histogram
 
-		numBins = 10
+		# num bins ~ sqrt(num results)
+		numBins = int(math.sqrt(len(self.parent.glyphArea.docs)))
 		bins = [0.0 for i in range(numBins)]
 
 		# loop through docs and put them into bins
