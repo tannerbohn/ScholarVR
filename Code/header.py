@@ -1,5 +1,6 @@
 from Tkinter import *
-
+import PIL.Image
+from PIL import ImageTk
 import graphicsTools as g
 
 import math

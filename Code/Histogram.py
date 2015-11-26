@@ -157,6 +157,9 @@ class Histogram:
 		if init:
 			self.drawSlidingWindow(init=True)
 
+			
+			self.canvas.tag_raise("image")
+			self.canvas.tag_raise("windowbar")
 			self.canvas.tag_raise("label")
 
 		if init:
@@ -225,9 +228,25 @@ class Histogram:
 		#	- a bar to grab and move for each side
 		#	- tint the  stuff below it (or try stipple?)
 
+		if init:
+			
+			with open("window.png") as fp:
+				self.originalImage = PIL.Image.open(fp)
+				resized = self.originalImage.resize((10,10),PIL.Image.ANTIALIAS)
+				image = ImageTk.PhotoImage(resized)
+
+				self.windowImage = image
+				#tk_image = Label(root, image=image, background=background, cursor='hand1')
+				#imageList.append(image)
+				self.windowIndex = self.canvas.create_image((0,0), image=self.windowImage, tags="image", anchor=NW)
+
+				#print self.originalImage.mode
+
 		if self.orientation == 'y':
 
 			if init:
+
+				
 				# fraction of way down glyph height
 				frac1 = 1.0 - (self.windowMax-self.totalMin)/(self.totalMax-self.totalMin)
 				frac2 = 1.0 - (self.windowMin-self.totalMin)/(self.totalMax-self.totalMin)
@@ -235,18 +254,26 @@ class Histogram:
 				x0, y0 = 0, self.dd.glyphAreaHeight*frac1
 				x1, y1 = self.dd.histThickness, self.dd.glyphAreaHeight*frac2
 				
+				# draw image instead of stipples rectangle
+				resized = self.originalImage.resize((int(x1-x0),int(y1-y0)),PIL.Image.ANTIALIAS)
+				#print "dims:", int(x1-x0),int(y1-y0)
+				self.windowImage = ImageTk.PhotoImage(resized)
+				self.canvas.coords(self.windowIndex, x0, y0)
+				self.canvas.itemconfig(self.windowIndex, image=self.windowImage)
 
-				self.windowIndex = self.canvas.create_rectangle(x0, y0, x1, y1, tag="window",
-					outline="black", fill=g.toHex(self.dd.histWindow), width=2, stipple='gray25')
+				#self.windowIndex = self.canvas.create_rectangle(x0, y0, x1, y1, tag="window",
+				#	outline="black", fill=g.toHex(self.dd.histWindow), width=2, stipple='gray25')
+
+
 
 				self.pixLoc=(x0, y0)
 
 
 
 				# add draggable bars for adjustable window size
-				self.maxWindowBarIndex = self.canvas.create_line(x0, y0, x1, y0, tag="bar",
+				self.maxWindowBarIndex = self.canvas.create_line(x0, y0, x1, y0, tag="windowbar",
 					fill=g.toHex(self.dd.histBar), width=5, activefill=g.toHex(self.dd.histBarActive))
-				self.minWindowBarIndex = self.canvas.create_line(x0, y1, x1, y1, tag="bar",
+				self.minWindowBarIndex = self.canvas.create_line(x0, y1, x1, y1, tag="windowbar",
 					fill=g.toHex(self.dd.histBar), width=5, activefill=g.toHex(self.dd.histBarActive))
 
 
@@ -255,12 +282,12 @@ class Histogram:
 				tx, ty = self.dd.histThickness*0.25, y0+10
 				self.windowMaxLabelIndex = self.canvas.create_text(tx, ty,
 					text='%s'%int(self.windowMax), font=(g.mainFont, 12, "normal"),
-					fill=g.toHex(self.dd.labelColour))
+					fill=g.toHex(self.dd.labelColour), tags="label")
 
 				tx, ty = self.dd.histThickness*0.25, y1-10
 				self.windowMinLabelIndex = self.canvas.create_text(tx, ty,
 					text='%s'%int(self.windowMin), font=(g.mainFont, 12, "normal"),
-					fill=g.toHex(self.dd.labelColour))
+					fill=g.toHex(self.dd.labelColour), tags="label")
 
 			else:
 				# fraction of way down glyph height
@@ -270,7 +297,16 @@ class Histogram:
 				x0, y0 = 0, self.dd.glyphAreaHeight*frac1
 				x1, y1 = self.dd.histThickness, self.dd.glyphAreaHeight*frac2
 					
-				self.canvas.coords(self.windowIndex, x0, y0, x1, y1)
+
+				# draw image instead of stipples rectangle
+				resized = self.originalImage.resize((int(x1-x0),int(y1-y0)),PIL.Image.ANTIALIAS)
+				#print "dims:", int(x1-x0),int(y1-y0)
+				self.windowImage = ImageTk.PhotoImage(resized)
+				self.canvas.coords(self.windowIndex, x0, y0)
+				self.canvas.itemconfig(self.windowIndex, image=self.windowImage)
+
+
+				#self.canvas.coords(self.windowIndex, x0, y0, x1, y1)
 
 				self.pixLoc=(x0, y0)
 
@@ -295,17 +331,25 @@ class Histogram:
 				x1, y1 = self.dd.glyphAreaWidth*(self.windowMax - self.totalMin)/(self.totalMax-self.totalMin), 0
 					
 
+				# draw image instead of stipples rectangle
+				#print "dims:", int(x1-x0),int(y0-y1)
+				resized = self.originalImage.resize((int(x1-x0),int(y0-y1)))#,PIL.Image.ANTIALIAS)
+				
+				self.windowImage = ImageTk.PhotoImage(resized)
+				self.canvas.coords(self.windowIndex, x0, y1)
+				self.canvas.itemconfig(self.windowIndex, image=self.windowImage)
 
-				self.windowIndex = self.canvas.create_rectangle(x0, y0, x1, y1, tag="window",
-					outline="black", fill=g.toHex(self.dd.histWindow), width=2, stipple='gray25')
+
+				#self.windowIndex = self.canvas.create_rectangle(x0, y0, x1, y1, tag="window",
+				#	outline="black", fill=g.toHex(self.dd.histWindow), width=2, stipple='gray25')
 
 				self.pixLoc=(x0, y0)
 
 
 				# add draggable bars for adjustable window size
-				self.minWindowBarIndex = self.canvas.create_line(x0, y0, x0, y1, tag="bar",
+				self.minWindowBarIndex = self.canvas.create_line(x0, y0, x0, y1, tag="windowbar",
 					fill=g.toHex(self.dd.histBar), width=5, activefill=g.toHex(self.dd.histBarActive))
-				self.maxWindowBarIndex = self.canvas.create_line(x1, y0, x1, y1, tag="bar",
+				self.maxWindowBarIndex = self.canvas.create_line(x1, y0, x1, y1, tag="windowbar",
 					fill=g.toHex(self.dd.histBar), width=5, activefill=g.toHex(self.dd.histBarActive))
 
 
@@ -314,12 +358,12 @@ class Histogram:
 				tx, ty = x1-10, self.dd.histThickness*0.75
 				self.windowMaxLabelIndex = self.canvas.create_text(tx, ty,
 					text='%s'%int(self.windowMax), font=(g.mainFont, 12, "normal"),
-					fill=g.toHex(self.dd.labelColour))
+					fill=g.toHex(self.dd.labelColour), tags="label")
 
 				tx, ty = x0+10, self.dd.histThickness*0.75
 				self.windowMinLabelIndex = self.canvas.create_text(tx, ty,
 					text='%s'%int(self.windowMin), font=(g.mainFont, 12, "normal"),
-					fill=g.toHex(self.dd.labelColour))
+					fill=g.toHex(self.dd.labelColour), tags="label")
 
 				
 			else:
@@ -333,6 +377,16 @@ class Histogram:
 				x0 = x0; y0 = y0
 				x1 = x1; y1 = y1
 
+
+				# draw image instead of stipples rectangle
+				#print "dims:", int(x1-x0),int(y0-y1)
+				resized = self.originalImage.resize((int(x1-x0),int(y0-y1)))#,PIL.Image.ANTIALIAS)
+				
+				self.windowImage = ImageTk.PhotoImage(resized)
+				self.canvas.coords(self.windowIndex, x0, y1)
+				self.canvas.itemconfig(self.windowIndex, image=self.windowImage)
+
+
 				# labels for total min and max
 				tx, ty = x1-10, self.dd.histThickness*0.75
 				self.canvas.coords(self.windowMaxLabelIndex, tx, ty)
@@ -343,7 +397,7 @@ class Histogram:
 				self.canvas.itemconfig(self.windowMinLabelIndex, text='%s'%int(self.windowMin))
 
 
-				self.canvas.coords(self.windowIndex, x0, y0, x1, y1)
+				#self.canvas.coords(self.windowIndex, x0, y0, x1, y1)
 
 				self.canvas.coords(self.minWindowBarIndex,x0, y0, x0, y1)
 				self.canvas.coords(self.maxWindowBarIndex,x1, y0, x1, y1)
