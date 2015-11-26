@@ -5,3 +5,5 @@ import graphicsTools as g
 
 import math
 import random
+
+random.seed(1)

@@ -35,7 +35,7 @@ class DesignDetails:
 		self.focusNum = 10
 
 		# gray out random results
-		self.randomGrayFrac = 0.3
+		self.randomGrayFrac = 0.0
 
 		self.maxGlyphR = 50.0
 		self.minGlyphR = 10.0

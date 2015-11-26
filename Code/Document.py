@@ -347,8 +347,6 @@ class Document:
 		yLoc = 0
 
 
-		#self.loc=(random.random(), random.random())#(0.0,0.0)
-
 		#print yMin, yMax, xMin, xMax
 
 		#print "xMax, xMin = ", xMax, xMin
