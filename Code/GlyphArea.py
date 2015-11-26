@@ -7,6 +7,8 @@ class GlyphArea:
 	root=[]
 	docs=[]
 
+	pausePanning = False
+
 	def __init__(self, parent):
 		self.parent = parent
 		self.dd = parent.dd
@@ -16,6 +18,9 @@ class GlyphArea:
 
 		self.numDocs=self.dd.numDocs
 		self.createDocs()
+
+
+		self.focus = []
 
 		return
 
@@ -55,6 +60,8 @@ class GlyphArea:
 			self.legend2LabelIndex = self.canvas.create_text(lx+20, ly+30,tag="legend_label",
 				text='WOS', font=(g.mainFont, 12, "normal"),
 				fill=g.toHex(self.dd.labelColour))
+
+			self.addBinds()
 
 		else:
 			for d in self.docs:
@@ -99,11 +106,69 @@ class GlyphArea:
 				x1, y1 = l['end'].loc; x1 *= canvasWidth; y1 *= canvasHeight
 				self.canvas.coords(l['canvas_index'], x0, y0, x1, y1)
 
+	def addBinds(self):
+		# panning
+		self.canvas.bind('<Button-1>', self.startDrag)
+		self.canvas.bind('<B1-Motion>', self.onDrag)
+		self.canvas.bind('<ButtonRelease-1>', self.endDrag)
+
+		# zooming
+		self.canvas.bind('<4>', lambda event : self.zoom('in', event))
+		self.canvas.bind('<5>', lambda event : self.zoom('out', event))
+
+
+	# PANNING
+	def startDrag(self, event):
+		self.dragInit = (event.x, event.y)
+		self.cursorPos = (event.x, event.y)
+
+	def endDrag(self, event):
+		self.pausePanning = False
+		self.root.update()
+
+	def onDrag(self, event):
+		#if not self.pausePanning:
+			# shift all objects on canvas
+		delta = (event.x - self.cursorPos[0], event.y - self.cursorPos[1])
+
+		self.cursorPos = (event.x, event.y)
+
+		# use delta to update histogram ranges
+		# need to take into account the size of the window
+		yHWMin = self.parent.yHist.windowMin
+		yHWMax = self.parent.yHist.windowMax
+		yHTMin = self.parent.yHist.totalMin
+		yHTMax = self.parent.yHist.totalMax
+
+		xHWMin = self.parent.xHist.windowMin
+		xHWMax = self.parent.xHist.windowMax
+		xHTMin = self.parent.xHist.totalMin
+		xHTMax = self.parent.xHist.totalMax
+
+		yZoom = (yHWMax - yHWMin)/(yHTMax - yHTMin)
+		xZoom = (xHWMax - xHWMin)/(xHTMax - xHTMin)
+		dx = -1.0*delta[0] * xZoom
+		dy = -1.0*delta[1] * yZoom
+
+
+		self.parent.yHist.moveByPix((0, 1.0*dy), "both")
+		
+		self.parent.xHist.moveByPix((1.0*dx, 0), "both")
+
+	def zoom(self, direction="in", event=[]):
+	
+		self.parent.yHist.zoom(direction)
+		self.parent.xHist.zoom(direction)
+		
+
+
+
 
 	def createDocs(self):
 
+
 		for i in range(self.numDocs):
-			d = Document(self, rank=i+1)
+			d = Document(self, rank=i+1, focus=(i==self.dd.focusNum and self.dd.docFocus))
 			#d.printData()
 			self.docs.append(d)
 

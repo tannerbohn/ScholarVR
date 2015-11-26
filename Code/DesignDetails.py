@@ -17,13 +17,25 @@ class DesignDetails:
 			- to right of topicArea
 	'''
 	def __init__(self):
+		self.totalWidth = 800#1200
+		self.totalHeight = 450#800
+
+
 		self.histThickness = 70
 
-		self.glyphAreaWidth = 800
-		self.glyphAreaHeight = 450
+		self.resultListWidth = 0#300
+		self.resultListHeight = self.totalHeight - self.histThickness
 
-		self.resultListWidth = 200
-		self.resultListHeight = self.glyphAreaHeight
+		self.glyphAreaWidth = self.totalWidth-self.histThickness-self.resultListWidth
+		self.glyphAreaHeight = self.totalHeight - self.histThickness
+
+		
+		# pick a document to set as "center" to emulate citation view
+		self.docFocus=False
+		self.focusNum = 10
+
+		# gray out random results
+		self.randomGrayFrac = 0.3
 
 		self.maxGlyphR = 50.0
 		self.minGlyphR = 10.0
@@ -55,7 +67,7 @@ class DesignDetails:
 
 		''' ##################### '''
 
-		
+		'''
 		# dark grey
 		self.background = self.grey2
 
@@ -67,32 +79,55 @@ class DesignDetails:
 
 		self.glyphR3Colour = self.red
 
-		self.citeLinkColour = g.shadeN([self.background, self.white], [0,1], 0.5)
+		self.citeLinkColour = g.shadeN([self.background, self.white], [0,1], 0.1)
 
 		# dark grey
 		self.histBkg = self.grey4
 		# light blue
 		self.histFgd = self.blue
 
+		self.histWindow = self.white
+
+		self.histBar = self.orange
+		self.histBarActive = self.red
+
 		self.labelColour = (1,1,1)
 		'''
+
+		self.cbBlue1 = g.toFloatfHex('#2b8cbe')
+		self.cbBlue2 = g.toFloatfHex('#a6bddb')
+		self.cbBlue3 = g.toFloatfHex('#ece7f2')
+
+		self.cbTeal1 = g.toFloatfHex('#1c9099')
+		self.cbTeal2 = g.toFloatfHex('#a6bddb')
+		
+
 		self.background = self.very_light_grey
+
+		self.glyphRankColour = (1,1,1)
 
 		self.glyphOpacity = 0.1
 
-		self.glyphR1Colour = self.green
+		self.glyphR1Colour = self.black
 
-		self.glyphR2Colour = self.red
+		self.glyphR2Colour = g.toFloatfHex('#de2d26')
 
-		self.glyphR3Colour = self.blue
+		self.glyphR3Colour = self.cbTeal1
 
-		self.citeLinkColour = self.black
+		self.citeLinkColour = g.shadeN([self.background, self.black], [0,1], 0.1)
 
 
 		# dark grey
-		self.histBkg = self.grey4
+		self.histBkg = (0.85, 0.85, 0.85)
 		# light blue
 		self.histFgd = self.blue
 
-		self.labelColour = (1,1,1)
-		'''
+		self.histWindow = self.white
+
+		self.histBar = self.orange
+		self.histBarActive = self.red
+
+		self.labelColour = (0,0,0)
+		
+		
+		

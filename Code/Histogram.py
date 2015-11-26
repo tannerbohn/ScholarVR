@@ -45,7 +45,7 @@ class Histogram:
 					width=self.dd.histThickness, height=self.dd.glyphAreaHeight)
 
 				bg = g.toHex(self.dd.histBkg)
-				self.canvas.configure(bg=bg, bd=0, highlightthickness=0, relief='ridge')
+				self.canvas.configure(bg=bg, bd=1)#, highlightthickness=0, relief='ridge')
 
 
 				# now draw the bin bars
@@ -106,7 +106,7 @@ class Histogram:
 					width=canvasW-self.dd.histThickness-self.dd.resultListWidth, height=canvasH-self.dd.glyphAreaHeight)
 
 				bg = g.toHex(self.dd.histBkg)
-				self.canvas.configure(bg=bg, bd=0, highlightthickness=0, relief='ridge')
+				self.canvas.configure(bg=bg, bd=1)#, highlightthickness=0, relief='ridge')
 
 				# now draw the bin bars
 				numBins = len(self.bins)
@@ -165,19 +165,17 @@ class Histogram:
 
 	def updateTotalRange(self):
 		if self.orientation == 'y':
-			self.totalMin, self.totalMax = self.parent.glyphArea.getCitationRange(ignoreWindow=True)
+			self.totalMin,self.totalMax = self.parent.glyphArea.getCitationRange(ignoreWindow=True)
 			dist = self.totalMax - self.totalMin
 			#self.totalMin = int(self.totalMin - dist*0.1)
 			self.totalMax = int(self.totalMax + dist*0.1)
 		else: #'x'
-			self.totalMin, self.totalMax = self.parent.glyphArea.getYearRange(ignoreWindow=True)
+			self.totalMin,self.totalMax =  self.parent.glyphArea.getYearRange(ignoreWindow=True)
 			dist = self.totalMax - self.totalMin
 			self.totalMin = int(self.totalMin - dist*0.1)
 			self.totalMax = int(self.totalMax + dist*0.1)
 
-		#dist = self.totalMax - self.totalMin
-		#self.totalMin = int(self.totalMin - dist*0.1)
-		#self.totalMax = int(self.totalMax + dist*0.1)
+	
 
 	def getWindowRange(self, init=False):
 		if init:
@@ -239,9 +237,17 @@ class Histogram:
 				
 
 				self.windowIndex = self.canvas.create_rectangle(x0, y0, x1, y1, tag="window",
-					outline="black", fill="white", width=2, stipple='gray25')
+					outline="black", fill=g.toHex(self.dd.histWindow), width=2, stipple='gray25')
 
 				self.pixLoc=(x0, y0)
+
+
+
+				# add draggable bars for adjustable window size
+				self.maxWindowBarIndex = self.canvas.create_line(x0, y0, x1, y0, tag="bar",
+					fill=g.toHex(self.dd.histBar), width=5, activefill=g.toHex(self.dd.histBarActive))
+				self.minWindowBarIndex = self.canvas.create_line(x0, y1, x1, y1, tag="bar",
+					fill=g.toHex(self.dd.histBar), width=5, activefill=g.toHex(self.dd.histBarActive))
 
 
 
@@ -266,6 +272,10 @@ class Histogram:
 					
 				self.canvas.coords(self.windowIndex, x0, y0, x1, y1)
 
+				self.pixLoc=(x0, y0)
+
+				self.canvas.coords(self.maxWindowBarIndex, x0, y0, x1, y0)
+				self.canvas.coords(self.minWindowBarIndex, x0, y1, x1, y1)
 
 				# labels for window min and max
 				tx, ty = self.dd.histThickness*0.25, y0+10
@@ -275,6 +285,9 @@ class Histogram:
 				tx, ty = self.dd.histThickness*0.25, y1-10
 				self.canvas.coords(self.windowMinLabelIndex, tx, ty)
 				self.canvas.itemconfig(self.windowMinLabelIndex, text='%s'%int(self.windowMin))
+
+
+				
 		else: #'x'
 
 			if init:
@@ -284,9 +297,18 @@ class Histogram:
 
 
 				self.windowIndex = self.canvas.create_rectangle(x0, y0, x1, y1, tag="window",
-					outline="black", fill="white", width=2, stipple='gray25')
+					outline="black", fill=g.toHex(self.dd.histWindow), width=2, stipple='gray25')
 
 				self.pixLoc=(x0, y0)
+
+
+				# add draggable bars for adjustable window size
+				self.minWindowBarIndex = self.canvas.create_line(x0, y0, x0, y1, tag="bar",
+					fill=g.toHex(self.dd.histBar), width=5, activefill=g.toHex(self.dd.histBarActive))
+				self.maxWindowBarIndex = self.canvas.create_line(x1, y0, x1, y1, tag="bar",
+					fill=g.toHex(self.dd.histBar), width=5, activefill=g.toHex(self.dd.histBarActive))
+
+
 
 				# labels for total min and max
 				tx, ty = x1-10, self.dd.histThickness*0.75
@@ -304,6 +326,13 @@ class Histogram:
 				x0, y0 = self.dd.glyphAreaWidth*(self.windowMin - self.totalMin)/(self.totalMax-self.totalMin), self.dd.histThickness
 				x1, y1 = self.dd.glyphAreaWidth*(self.windowMax - self.totalMin)/(self.totalMax-self.totalMin), 0
 					
+
+
+				self.pixLoc=(x0, y0)
+
+				x0 = x0; y0 = y0
+				x1 = x1; y1 = y1
+
 				# labels for total min and max
 				tx, ty = x1-10, self.dd.histThickness*0.75
 				self.canvas.coords(self.windowMaxLabelIndex, tx, ty)
@@ -316,10 +345,17 @@ class Histogram:
 
 				self.canvas.coords(self.windowIndex, x0, y0, x1, y1)
 
+				self.canvas.coords(self.minWindowBarIndex,x0, y0, x0, y1)
+				self.canvas.coords(self.maxWindowBarIndex,x1, y0, x1, y1)
+
+
+
 
 		if not init:
 			self.draw()
 			self.parent.glyphArea.draw()
+
+
 
 
 		return
@@ -335,86 +371,154 @@ class Histogram:
 		self.canvas.tag_bind(self.windowIndex, '<Leave>',
 				(lambda event, widget="window": self.widgetLeave(event, widget)))
 
+		self.canvas.tag_bind(self.minWindowBarIndex, '<Enter>',
+				(lambda event, widget="minBar": self.widgetEnter(event, widget)))
+		self.canvas.tag_bind(self.minWindowBarIndex, '<Leave>',
+				(lambda event, widget="minBar": self.widgetLeave(event, widget)))
+
+		self.canvas.tag_bind(self.maxWindowBarIndex, '<Enter>',
+				(lambda event, widget="maxBar": self.widgetEnter(event, widget)))
+		self.canvas.tag_bind(self.maxWindowBarIndex, '<Leave>',
+				(lambda event, widget="maxBar": self.widgetLeave(event, widget)))
+
 		# drag window to move
-		self.canvas.tag_bind(self.windowIndex, '<Button-1>', self.startDrag)
-		self.canvas.tag_bind(self.windowIndex, '<ButtonRelease-1>', self.endDrag)
-		self.canvas.tag_bind(self.windowIndex, '<B1-Motion>', self.onLeftDrag)
+		#self.canvas.tag_bind(self.windowIndex, '<Button-1>', self.startDrag)
+		#self.canvas.tag_bind(self.windowIndex, '<ButtonRelease-1>', self.endDrag)
+		#self.canvas.tag_bind(self.windowIndex, '<B1-Motion>', self.onLeftDrag)
+
+		self.canvas.tag_bind(self.windowIndex, '<Button-1>',
+				(lambda event, widget="window": self.startDrag(event, widget)))
+		self.canvas.tag_bind(self.windowIndex, '<ButtonRelease-1>',
+				(lambda event, widget="window": self.endDrag(event, widget)))
+		self.canvas.tag_bind(self.windowIndex, '<B1-Motion>',
+				(lambda event, widget="window": self.onLeftDrag(event, widget)))
+
+		
+		# drag bars to adjust window size
+		self.canvas.tag_bind(self.minWindowBarIndex, '<Button-1>',
+				(lambda event, widget="minBar": self.startDrag(event, widget)))
+		self.canvas.tag_bind(self.minWindowBarIndex, '<ButtonRelease-1>',
+				(lambda event, widget="minBar": self.endDrag(event, widget)))
+		self.canvas.tag_bind(self.minWindowBarIndex, '<B1-Motion>',
+				(lambda event, widget="minBar": self.onLeftDrag(event, widget)))
+
+		self.canvas.tag_bind(self.maxWindowBarIndex, '<Button-1>',
+				(lambda event, widget="maxBar": self.startDrag(event, widget)))
+		self.canvas.tag_bind(self.maxWindowBarIndex, '<ButtonRelease-1>',
+				(lambda event, widget="maxBar": self.endDrag(event, widget)))
+		self.canvas.tag_bind(self.maxWindowBarIndex, '<B1-Motion>',
+				(lambda event, widget="maxBar": self.onLeftDrag(event, widget)))
+
+		
 
 	def widgetEnter(self, event=[], widget=""):
-		if widget=="window":
+		if widget in ["window", "minBar", "maxBar"]:
 			self.canvas.config(cursor="hand1")
 
 	def widgetLeave(self, event=[], widget=""):
 
 		self.canvas.config(cursor="arrow")
 
-	def startDrag(self, event):
-
+	def startDrag(self, event, widget):
+	
 		self.dragInit = (event.x, event.y)
 		self.cursorPos = (event.x, event.y)
 	
 
 		#print self.cursorPos
 
-	def endDrag(self, event):
+	def endDrag(self, event, widget):
 
 		self.draw()
 		
 		self.root.update()
 
 
-	def onLeftDrag(self, event):
+	def onLeftDrag(self, event, widget):
+			
+		if widget == "window":
+			delta = (event.x - self.cursorPos[0], event.y - self.cursorPos[1])
 
+			self.cursorPos = (event.x, event.y)
 		
-		delta = (event.x - self.cursorPos[0], event.y - self.cursorPos[1])
+			if self.orientation == 'y':
+				self.moveByPix((0, 1.0*delta[1]), "both")
+			else: #'x'
+				self.moveByPix((1.0*delta[0], 0), "both")
+		elif widget == "minBar":
+		
+			delta = (event.x - self.cursorPos[0], event.y - self.cursorPos[1])
 
-		self.cursorPos = (event.x, event.y)
-		#print "drag:", event.x, event.y
-		#self.moveTo((1.0*event.x/self.root.winfo_width(), 1.0*event.y/self.root.winfo_height()))
+			self.cursorPos = (event.x, event.y)
+		
+			if self.orientation == 'y':
+				self.moveByPix((0, 1.0*delta[1]), "min")
+			else: #'x'
+				self.moveByPix((1.0*delta[0], 0), "min")
+		elif widget == "maxBar":
+			
+			delta = (event.x - self.cursorPos[0], event.y - self.cursorPos[1])
 
-		if self.orientation == 'y':
-			self.moveByPix((0, 1.0*delta[1]))
-		else: #'x'
-			self.moveByPix((1.0*delta[0], 0))
+			self.cursorPos = (event.x, event.y)
+		
+			if self.orientation == 'y':
+				self.moveByPix((0, 1.0*delta[1]), "max")
+			else: #'x'
+				self.moveByPix((1.0*delta[0], 0), "max")
 		
 
 		return
 
-	def moveByPix(self, (x,y)):
+	def moveByPix(self, (x,y), bounds="both"):
 
+		diff = self.pixVecToValue((x,y))
+		if bounds=="both":
+			#print "here"
+			if self.windowMax+diff >= self.totalMax or self.windowMin+diff <= self.totalMin:
+				return
 
-		newX, newY = self.pixLoc[0] + x, self.pixLoc[1]+y
+			self.windowMax = max(min(self.windowMax+diff, self.totalMax), self.windowMin+1)
+			self.windowMin = min(max(self.windowMin+diff, self.totalMin), self.windowMax-1)
+			#self.moveByPix((x,y), bounds="min")
+			#self.moveByPix((x,y), bounds="max")
 
-		hDims = self.getHistDims()
+		elif bounds == "min":
+			# moving min bar by (x,y)
+			self.windowMin = min(max(self.windowMin+diff, self.totalMin), self.windowMax-1)
 
-		if newX < 0:
-			newX = 0
-		if newX > self.dd.glyphAreaWidth-hDims[0]:
-			newX = self.dd.glyphAreaWidth-hDims[0]
-		if newY < 0:
-			newY = 0
-		if newY > self.dd.glyphAreaHeight-hDims[1]:
-			newY = self.dd.glyphAreaHeight-hDims[1]
+		elif bounds == "max":
+			# moving min bar by (x,y)
+			self.windowMax = max(min(self.windowMax+diff, self.totalMax), self.windowMin+1)
+			
 
-		self.pixLoc = (newX, newY)
+		self.drawSlidingWindow()
 
-		# determine new window max/min
-		diff = self.windowMax - self.windowMin
-		if self.orientation == 'y':
-			newFrac = 1.0 * newY/self.dd.glyphAreaHeight
-			self.windowMax = (1.0-newFrac)*self.totalMax + (newFrac)*self.totalMin
-			self.windowMin = self.windowMax - diff
-		else: #'x'
-			newFrac = 1.0 * newX/self.dd.glyphAreaWidth
-			self.windowMin = (1.0-newFrac)*self.totalMin + (newFrac)*self.totalMax
-			self.windowMax = self.windowMin + diff
+		self.draw()
 
+	def zoom(self, direction):
+
+		if direction == "in":
+
+			# update min bound
+			self.windowMin = min(max(self.windowMin+1, self.totalMin), self.windowMax-1)
+
+			# update max bound
+			self.windowMax = max(min(self.windowMax-1, self.totalMax), self.windowMin+1)
+
+		else:
+
+			# update min bound
+			self.windowMin = min(max(self.windowMin-1, self.totalMin), self.windowMax-1)
+
+			# update max bound
+			self.windowMax = max(min(self.windowMax+1, self.totalMax), self.windowMin+1)
 
 		self.drawSlidingWindow()
 
 		self.draw()
 
 	def getHistDims(self):
+		# get the pixel dimensions of the window
 
 		if self.orientation == 'y':
 			frac1 = 1.0 - (self.windowMax-self.totalMin)/(self.totalMax-self.totalMin)
@@ -430,3 +534,34 @@ class Histogram:
 			x1, y1 = self.dd.glyphAreaWidth*(self.windowMax - self.totalMin)/(self.totalMax-self.totalMin), 0
 
 			return (x1-x0, y1-y0)
+
+	def locToValue(self, loc):
+		if self.orientation == 'y':
+
+			return (1.0-loc[1])*self.totalMax + (loc[1])*self.totalMin
+		else: #'x'
+			return (1.0-loc[0])*self.totalMin + (loc[0])*self.totalMax
+
+	def pixLocToValue(self, pixLoc):
+
+		canvasW = self.dd.glyphAreaWidth
+		canvasH = self.dd.glyphAreaHeight
+
+		loc = (1.0*pixLoc[0]/canvasW, 1.0*pixLoc[1]/canvasH)
+		# bound loc to [0,1]?
+
+		return self.locToValue(loc)
+
+	def pixVecToValue(self, pixVec):
+
+		canvasW = self.dd.glyphAreaWidth
+		canvasH = self.dd.glyphAreaHeight
+
+		# calculate pix vec length as frac of total
+		diff = self.totalMax - self.totalMin
+		if self.orientation == 'y':
+			frac = (-1.0*pixVec[1])/canvasH
+			return frac*diff
+		else: #'x'
+			frac = (1.0*pixVec[0]/canvasW)
+			return frac*diff

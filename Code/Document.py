@@ -8,12 +8,14 @@ class Document:
 
 	hidden=False
 
-	def __init__(self, parent, rank):
+	def __init__(self, parent, rank, focus=False):
 
 		self.root = parent.root
 		self.parent=parent
 		self.canvas = parent.canvas
 		self.dd = parent.dd
+
+		self.focus=focus
 
 		self.rank=rank
 		self.author = [self.randomName()]
@@ -25,6 +27,8 @@ class Document:
 
 		self.citations = random.randint(0, 100) #1000/rank
 		self.title = self.randomTitle()
+
+		self.grayed = random.random() <= self.dd.randomGrayFrac
 
 		#self.loc=(random.random(), random.random())#(0.0,0.0)
 		
@@ -40,7 +44,6 @@ class Document:
 
 
 		self.getLoc()
-		
 
 		
 		#if not self.inWindow() and not init:
@@ -78,32 +81,57 @@ class Document:
 
 		
 		r3 = r*3./3
-		x0p, y0p = x-r3, y-r3
-		x1p, y1p = x+r3, y+r3
-		fill = g.toHex(g.shadeN([self.dd.background, self.dd.glyphR3Colour], [0,1], self.dd.glyphOpacity))
-		fracFill = g.toHex(self.dd.glyphR3Colour)
+		#print x, r3
+		x0p, y0p= int(x-r3), int(y-r3)
+		
+		x1p, y1p = int(x+r3), int(y+r3)
+		
 
 		if init:
+
+			fill = g.shadeN([self.dd.background, self.dd.glyphR3Colour], [0,1], self.dd.glyphOpacity)
+			fracFill = self.dd.glyphR3Colour
+			# gray out glyph
+			if self.grayed:
+				fill = g.shadeN([self.dd.background, fill], [0,1], 0.15)
+				fracFill = g.shadeN([self.dd.background, fracFill], [0,1], 0.15)
+			fill = g.toHex(fill)
+			fracFill = g.toHex(fracFill)
+
 			self.circle3Index = self.canvas.create_oval(x0p, y0p, x1p, y1p,
 				fill=fill, width=0, activewidth=0, tags="circle3")
 
 			self.circle3FracIndex = self.canvas.create_arc(x0p, y0p, x1p, y1p,
 				fill=fracFill, width=0, activewidth=0, tags="circle3",outline=fracFill,
 				extent=-1.*self.angle3, start=90)
+
+			
 		else:
 
 			self.canvas.coords(self.circle3Index, x0p, y0p, x1p, y1p)
 			self.canvas.coords(self.circle3FracIndex, x0p, y0p, x1p, y1p)
 			self.canvas.itemconfig(self.circle3FracIndex, extent=-1.*self.angle3)
 
+			
+
 
 
 		r2 = r*2./3
-		x0p, y0p = x-r2, y-r2
-		x1p, y1p = x+r2, y+r2
-		fill =  g.toHex(g.shadeN([self.dd.background, self.dd.glyphR2Colour], [0,1], self.dd.glyphOpacity))
-		fracFill = g.toHex(self.dd.glyphR2Colour)
+		x0p, y0p = int(x-r2), int(y-r2)
+		x1p, y1p = int(x+r2), int(y+r2)
+		
+		
+
 		if init:
+			fill = g.shadeN([self.dd.background, self.dd.glyphR2Colour], [0,1], self.dd.glyphOpacity)
+			fracFill = self.dd.glyphR2Colour
+			# gray out glyph
+			if self.grayed:
+				fill = g.shadeN([self.dd.background, fill], [0,1], 0.15)
+				fracFill = g.shadeN([self.dd.background, fracFill], [0,1], 0.15)
+			fill = g.toHex(fill)
+			fracFill = g.toHex(fracFill)
+
 			self.circle2Index = self.canvas.create_oval(x0p, y0p, x1p, y1p,
 				fill=fill, width=0, activewidth=0, tags="circle2")
 			self.circle2FracIndex = self.canvas.create_arc(x0p, y0p, x1p, y1p,
@@ -117,16 +145,58 @@ class Document:
 
 
 		r1 = r*1./3
-		x0p, y0p = x-r1, y-r1
-		x1p, y1p = x+r1, y+r1
-		fill = g.toHex(self.dd.glyphR1Colour)
+		x0p, y0p = int(x-r1), int(y-r1)
+		x1p, y1p = int(x+r1), int(y+r1)
+		
+
 		if init:
+			fill = self.dd.glyphR1Colour
+			# gray out glyph
+			if self.grayed:
+				fill = g.shadeN([self.dd.background, fill], [0,1], 0.15)
+			fill = g.toHex(fill)
+
 			self.circle1Index = self.canvas.create_oval(x0p, y0p, x1p, y1p,
 				fill=fill, width=0, activewidth=0, tags="circle1")
 			#self.circle1FracIndex = self.canvas.create_arc(x0p, y0p, x1p, y1p,
 			#	fill="black", width=0, activewidth=0, tags="circle1", extent=-180, start=90)
+
+			# put the rank label on the inner circles
+			lx, ly = x, y
+			self.rankLabelIndex = self.canvas.create_text(lx, ly,tag="label",
+				text='%s'%self.rank, font=(g.mainFont, int(self.radius/3.0), "normal"),
+				fill=g.toHex(self.dd.glyphRankColour))
+
+			# draw the title label
+			'''
+			lx, ly = -100, -100#x, y-r
+			self.titleLabelIndex = self.canvas.create_text(lx, ly,tag="titlelabel",
+				text='%s'%self.title, font=(g.mainFont, 12, "normal"),
+				fill=g.toHex(self.dd.labelColour))
+			'''
 		else:
 			self.canvas.coords(self.circle1Index, x0p, y0p, x1p, y1p)
+
+			self.canvas.coords(self.rankLabelIndex, x, y)
+			self.canvas.itemconfig(self.rankLabelIndex, font=(g.mainFont, int(self.radius/3.0), "normal"))
+
+			#self.canvas.coords(self.titleLabelIndex, -100, -100)#x, y-r)
+
+
+		# draw hover circles
+		'''
+		if init:
+			cRad=r+10
+			pa = pRad#*1.0/math.sqrt(2.0)
+			pb = math.sqrt(pRad*pRad - pa*pa)
+			s_x, s_y = x-pa, y+pb
+
+			self.hoverCircle1Index = self.canvas.create_oval(x0p, y0p, x1p, y1p,
+				fill=fill, width=0, activewidth=0, tags="circle1")
+
+		else:
+			return
+		'''
 
 
 
@@ -140,6 +210,7 @@ class Document:
 		'''
 
 		if init:
+			self.canvas.tag_raise("titlelabel")
 			self.setBinds()
 
 		return
@@ -160,6 +231,8 @@ class Document:
 				(lambda event, widget="circle2": self.widgetEnter(event, widget)))
 		self.canvas.tag_bind(self.circle1Index, '<Enter>',
 				(lambda event, widget="circle1": self.widgetEnter(event, widget)))
+		self.canvas.tag_bind(self.rankLabelIndex, '<Enter>',
+				(lambda event, widget="rankLabel": self.widgetEnter(event, widget)))
 
 		self.canvas.tag_bind(self.circle3Index, '<Leave>',
 				(lambda event, widget="circle3": self.widgetLeave(event, widget)))
@@ -171,17 +244,54 @@ class Document:
 				(lambda event, widget="circle2": self.widgetLeave(event, widget)))
 		self.canvas.tag_bind(self.circle1Index, '<Leave>',
 				(lambda event, widget="circle1": self.widgetLeave(event, widget)))
+		self.canvas.tag_bind(self.rankLabelIndex, '<Leave>',
+				(lambda event, widget="rankLabel": self.widgetEnter(event, widget)))
 	
 
 	def widgetEnter(self, event, name):
 
-		if name in ["circle3", "circle2", "circle1"]:
+		if name in ["circle3", "circle2", "circle1", "rankLabel"]:
+			self.hoverCircles("show")
 			self.parent.parent.resultList.setText(self.dataStr())
+
+			'''
+			self.canvas.itemconfig(self.circle3Index, width=2, outline="black")
+			self.canvas.itemconfig(self.circle3FracIndex, width=2, outline="black")
+			self.canvas.itemconfig(self.circle2Index, width=2, outline="black")
+			self.canvas.itemconfig(self.circle2FracIndex, width=2, outline="black")
+			'''
+
+			'''
+			canvasW=self.dd.glyphAreaWidth
+			canvasH=self.dd.glyphAreaHeight
+			x = 1.0*canvasW*self.loc[0]
+			y = 1.0*canvasH*self.loc[1]
+			r = self.radius
+
+			self.canvas.coords(self.titleLabelIndex, x, y-r-6)
+			'''
 
 	def widgetLeave(self, event, name):
 
-		if name in ["circle3", "circle2", "circle1"]:
+		if name in ["circle3", "circle2", "circle1", "rankLabel"]:
+			self.hoverCircles("hide")
 			self.parent.parent.resultList.setText("")
+
+			#self.canvas.coords(self.titleLabelIndex, -100, -100)
+
+			'''
+			self.canvas.itemconfig(self.circle3Index, width=0)
+			self.canvas.itemconfig(self.circle3FracIndex, width=0)
+			self.canvas.itemconfig(self.circle2Index, width=0)
+			self.canvas.itemconfig(self.circle2FracIndex, width=0)
+			'''
+
+	def hoverCircles(self, action):
+		if action == "show":
+			return
+		else: #hide
+			return
+
 
 	def dataStr(self):
 		data=[]
@@ -200,6 +310,14 @@ class Document:
 		return '\n'.join(data)
 
 	def getRadius(self):
+
+		if self.dd.docFocus:
+			if self.focus:
+				self.radius = self.dd.maxGlyphR
+			else:
+				self.radius = 0.5*(self.dd.maxGlyphR + self.dd.minGlyphR)
+			return
+
 		rank = self.rank
 
 		minRank, maxRank = self.parent.getRankRange(ignoreWindow=False)
@@ -209,11 +327,12 @@ class Document:
 			return
 
 
-		rank_p = 1.0 - 1.0*(rank - minRank)/(maxRank - minRank)
+		rank_p = 1.0 - 1.0*(rank - minRank)/(max(maxRank - minRank, 1.0))
 		#print rank_p*rank_p
 	
 
 		self.radius = max(self.dd.maxGlyphR * rank_p*rank_p, self.dd.minGlyphR)
+		self.radius = min(self.radius, self.dd.maxGlyphR)
 
 	def getLoc(self):
 
@@ -234,18 +353,19 @@ class Document:
 
 		#print "xMax, xMin = ", xMax, xMin
 		if xMax != xMin:
-			xLoc = 1.0 * (self.year - xMin)/(xMax-xMin)
+			xLoc = 1.0 * (self.year - xMin)/(max(xMax-xMin, 1.0))
 		else:
 			xLoc = 0.5
 
 		if yMax != yMin:
-			yLoc = 1.0 - 1.0 * (self.citations - yMin)/(yMax-yMin)
+			yLoc = 1.0 - 1.0 * (self.citations - yMin)/(max(yMax-yMin, 1.0))
 		else:
 			yLoc = 0.5
 
 		#print xLoc, yLoc
 
 		self.loc=(xLoc, yLoc)
+		#print self.loc
 
 	def getAngle2(self):
 		# measures h-index of author 
@@ -346,9 +466,11 @@ class Document:
 	def hasCiteLink(self, doc):
 		# lets pretend two docs share a cite link if they share a common title word
 		# will need to update this if we use titles with stopwords
-
-		influence = 1./ min(self.rank, doc.rank)
-		minRank = min(self.rank, doc.rank)
-		#influence = 1. - 1./(0.02 * math.sqrt(self.citations) + 1)
-		if len(set(self.title.split()) & set(doc.title.split())) >= 1 and influence >= random.random():
+		if not (self.focus or doc.focus):
+			influence = 1./ min(self.rank, doc.rank)
+			minRank = min(self.rank, doc.rank)
+			#influence = 1. - 1./(0.02 * math.sqrt(self.citations) + 1)
+			if len(set(self.title.split()) & set(doc.title.split())) >= 1 and influence >= random.random():
+				return True
+		else:
 			return True

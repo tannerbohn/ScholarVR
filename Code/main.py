@@ -14,7 +14,7 @@ def graphicsInit():
 		dd.glyphAreaHeight+dd.histThickness,
 		g.WIDTH/4, g.HEIGHT/4))
 
-	tk_root.config(bg=g.toHex(dd.black))
+	tk_root.config(bg=g.toHex(dd.very_light_grey))
 
 	tk_root.update()
 
